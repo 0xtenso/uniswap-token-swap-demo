@@ -1,0 +1,33 @@
+{
+  "name": "uniswap-token-swap-demo",
+  "version": "1.0.0",
+  "description": "Token swap demo using Uniswap SDK for multiple EVM chains",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/demo.js",
+    "dev": "ts-node src/demo.ts",
+    "test": "ts-node src/demo.ts"
+  },
+  "dependencies": {
+    "@uniswap/sdk-core": "^4.2.1",
+    "@uniswap/v3-sdk": "^3.10.0",
+    "@uniswap/swap-router-sdk": "^1.9.0",
+    "ethers": "^6.8.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
+  },
+  "keywords": [
+    "uniswap",
+    "defi",
+    "token-swap",
+    "ethereum",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+} 

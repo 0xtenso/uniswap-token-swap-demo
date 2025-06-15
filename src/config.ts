@@ -1,0 +1,87 @@
+import { Token } from '@uniswap/sdk-core';
+import { ChainConfig } from './types';
+
+export const CHAIN_CONFIGS: Record<number, ChainConfig> = {
+  // Ethereum Mainnet
+  1: {
+    chainId: 1,
+    name: 'Ethereum',
+    rpcUrl: process.env.ETHEREUM_RPC_URL || 'https://eth.llamarpc.com',
+    nativeCurrency: {
+      name: 'Ether',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+    swapRouterAddress: '0xE592427A0AEce92De3Edee1F18E0157C05861564',
+    quoterAddress: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
+  },
+  // Base
+  8453: {
+    chainId: 8453,
+    name: 'Base',
+    rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    nativeCurrency: {
+      name: 'Ether',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+    swapRouterAddress: '0x2626664c2603336E57B271c5C0b26F421741e481',
+    quoterAddress: '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a',
+  },
+  // Arbitrum One
+  42161: {
+    chainId: 42161,
+    name: 'Arbitrum One',
+    rpcUrl: process.env.ARBITRUM_RPC_URL || 'https://arb1.arbitrum.io/rpc',
+    nativeCurrency: {
+      name: 'Ether',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+    swapRouterAddress: '0xE592427A0AEce92De3Edee1F18E0157C05861564',
+    quoterAddress: '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
+  },
+  // BNB Smart Chain
+  56: {
+    chainId: 56,
+    name: 'BNB Smart Chain',
+    rpcUrl: process.env.BNB_RPC_URL || 'https://bsc-dataseed.binance.org',
+    nativeCurrency: {
+      name: 'BNB',
+      symbol: 'BNB',
+      decimals: 18,
+    },
+    swapRouterAddress: '0xB971eF87ede563556b2ED4b1C0b0019111Dd85d2',
+    quoterAddress: '0x78D78E420Da98ad378D7799bE8f4AF69033EB077',
+  },
+};
+
+// Common token addresses for each chain
+export const COMMON_TOKENS: Record<number, Record<string, Token>> = {
+  1: { // Ethereum
+    WETH: new Token(1, '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', 18, 'WETH', 'Wrapped Ether'),
+    USDC: new Token(1, '0xA0b86a33E6417efaf32ec70C9b7f932a3F8e8B8c', 6, 'USDC', 'USD Coin'),
+    USDT: new Token(1, '0xdAC17F958D2ee523a2206206994597C13D831ec7', 6, 'USDT', 'Tether USD'),
+    DAI: new Token(1, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18, 'DAI', 'Dai Stablecoin'),
+  },
+  8453: { // Base
+    WETH: new Token(8453, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether'),
+    USDC: new Token(8453, '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', 6, 'USDC', 'USD Coin'),
+    DAI: new Token(8453, '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', 18, 'DAI', 'Dai Stablecoin'),
+  },
+  42161: { // Arbitrum
+    WETH: new Token(42161, '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', 18, 'WETH', 'Wrapped Ether'),
+    USDC: new Token(42161, '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', 6, 'USDC', 'USD Coin'),
+    USDT: new Token(42161, '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', 6, 'USDT', 'Tether USD'),
+    DAI: new Token(42161, '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 18, 'DAI', 'Dai Stablecoin'),
+  },
+  56: { // BSC
+    WBNB: new Token(56, '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', 18, 'WBNB', 'Wrapped BNB'),
+    USDC: new Token(56, '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', 18, 'USDC', 'USD Coin'),
+    USDT: new Token(56, '0x55d398326f99059fF775485246999027B3197955', 18, 'USDT', 'Tether USD'),
+    BUSD: new Token(56, '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', 18, 'BUSD', 'Binance USD'),
+  },
+};
+
+export const DEFAULT_SLIPPAGE = 0.5; // 0.5%
+export const DEFAULT_DEADLINE = 1800; // 30 minutes 
