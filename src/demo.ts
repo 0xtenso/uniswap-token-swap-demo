@@ -50,7 +50,7 @@ async function demonstrateSwap() {
     console.log();
 
     // Demo wallet address (replace with actual address)
-    const demoWalletAddress = '0x742d35Cc6634C0532925a3b8D4b3c8E5C3c8E5C3'; // Example address
+    const demoWalletAddress = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // Example address (Vitalik's)
     
     if (privateKey) {
       console.log('🔐 Private key detected - swap execution enabled');

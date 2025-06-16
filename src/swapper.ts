@@ -1,7 +1,6 @@
 import { ethers } from 'ethers';
 import { Token, CurrencyAmount, TradeType, Percent } from '@uniswap/sdk-core';
 import { Route, Pool, FeeAmount, computePoolAddress } from '@uniswap/v3-sdk';
-import { SwapRouter, SwapOptions } from '@uniswap/swap-router-sdk';
 import { ChainConfig, SwapParams, SwapQuote, SwapResult } from './types';
 import { CHAIN_CONFIGS } from './config';
 
@@ -24,9 +23,13 @@ const POOL_ABI = [
   'function fee() external view returns (uint24)',
 ];
 
+const SWAP_ROUTER_ABI = [
+  'function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)) external payable returns (uint256 amountOut)',
+];
+
 export class SwapService {
   private provider: ethers.JsonRpcProvider;
-  private signer: ethers.Wallet;
+  private signer?: ethers.Wallet;
   private chainConfig: ChainConfig;
 
   constructor(chainId: number, privateKey?: string) {
@@ -78,7 +81,7 @@ export class SwapService {
     const amountInWei = ethers.parseUnits(amountIn, tokenIn.decimals);
 
     try {
-      const quotedAmountOut = await quoterContract.quoteExactInputSingle(
+      const quotedAmountOut = await quoterContract.quoteExactInputSingle.staticCall(
         tokenIn.address,
         tokenOut.address,
         fee,
@@ -110,70 +113,35 @@ export class SwapService {
     // Get quote first
     const quote = await this.getQuote(params.tokenIn, params.tokenOut, params.amountIn);
     
-    // Create currency amounts
-    const amountIn = CurrencyAmount.fromRawAmount(
-      params.tokenIn,
-      ethers.parseUnits(params.amountIn, params.tokenIn.decimals).toString()
-    );
-    
-    const amountOutMin = CurrencyAmount.fromRawAmount(
-      params.tokenOut,
-      ethers.parseUnits(
-        (parseFloat(quote.amountOut) * (1 - params.slippageTolerance / 100)).toString(),
-        params.tokenOut.decimals
-      ).toString()
+    // Calculate minimum amount out with slippage
+    const amountOutMin = ethers.parseUnits(
+      (parseFloat(quote.amountOut) * (1 - params.slippageTolerance / 100)).toString(),
+      params.tokenOut.decimals
     );
 
-    // Create pool (simplified - in production you'd fetch actual pool data)
-    const poolAddress = computePoolAddress({
-      factoryAddress: '0x1F98431c8aD98523631AE4a59f267346ea31F984', // V3 Factory
-      tokenA: params.tokenIn,
-      tokenB: params.tokenOut,
+    // Prepare swap parameters
+    const swapParams = {
+      tokenIn: params.tokenIn.address,
+      tokenOut: params.tokenOut.address,
       fee: FeeAmount.MEDIUM,
+      recipient: params.recipient,
+      deadline: Math.floor(Date.now() / 1000) + params.deadline,
+      amountIn: ethers.parseUnits(params.amountIn, params.tokenIn.decimals),
+      amountOutMinimum: amountOutMin,
+      sqrtPriceLimitX96: 0, // No price limit
+    };
+
+    // Execute the swap
+    const swapRouter = new ethers.Contract(
+      this.chainConfig.swapRouterAddress,
+      SWAP_ROUTER_ABI,
+      this.signer
+    );
+
+    const tx = await swapRouter.exactInputSingle(swapParams, {
+      gasLimit: '300000',
     });
 
-    // Get pool data
-    const poolContract = new ethers.Contract(poolAddress, POOL_ABI, this.provider);
-    const [slot0, liquidity] = await Promise.all([
-      poolContract.slot0(),
-      poolContract.liquidity(),
-    ]);
-
-    const pool = new Pool(
-      params.tokenIn,
-      params.tokenOut,
-      FeeAmount.MEDIUM,
-      slot0.sqrtPriceX96.toString(),
-      liquidity.toString(),
-      slot0.tick
-    );
-
-    const route = new Route([pool], params.tokenIn, params.tokenOut);
-
-    // Create swap options
-    const swapOptions: SwapOptions = {
-      slippageTolerance: new Percent(Math.floor(params.slippageTolerance * 100), 10000),
-      deadline: Math.floor(Date.now() / 1000) + params.deadline,
-      recipient: params.recipient,
-    };
-
-    // Generate the swap call data
-    const { calldata, value } = SwapRouter.swapCallParameters([{
-      type: TradeType.EXACT_INPUT,
-      route,
-      inputAmount: amountIn,
-      outputAmount: amountOutMin,
-    }], swapOptions);
-
-    // Execute the transaction
-    const transaction = {
-      to: this.chainConfig.swapRouterAddress,
-      data: calldata,
-      value: value,
-      gasLimit: '300000',
-    };
-
-    const tx = await this.signer.sendTransaction(transaction);
     const receipt = await tx.wait();
 
     return {
@@ -193,5 +161,42 @@ export class SwapService {
 
   getChainConfig(): ChainConfig {
     return this.chainConfig;
+  }
+
+  // Helper method to prepare swap data without executing
+  async prepareSwapData(params: SwapParams): Promise<{
+    to: string;
+    data: string;
+    value: string;
+    gasEstimate: string;
+  }> {
+    const quote = await this.getQuote(params.tokenIn, params.tokenOut, params.amountIn);
+    
+    const amountOutMin = ethers.parseUnits(
+      (parseFloat(quote.amountOut) * (1 - params.slippageTolerance / 100)).toString(),
+      params.tokenOut.decimals
+    );
+
+    const swapInterface = new ethers.Interface(SWAP_ROUTER_ABI);
+    
+    const swapData = {
+      tokenIn: params.tokenIn.address,
+      tokenOut: params.tokenOut.address,
+      fee: FeeAmount.MEDIUM,
+      recipient: params.recipient,
+      deadline: Math.floor(Date.now() / 1000) + params.deadline,
+      amountIn: ethers.parseUnits(params.amountIn, params.tokenIn.decimals),
+      amountOutMinimum: amountOutMin,
+      sqrtPriceLimitX96: 0,
+    };
+
+    const calldata = swapInterface.encodeFunctionData('exactInputSingle', [swapData]);
+
+    return {
+      to: this.chainConfig.swapRouterAddress,
+      data: calldata,
+      value: '0',
+      gasEstimate: quote.gasEstimate,
+    };
   }
 } 

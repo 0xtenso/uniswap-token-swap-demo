@@ -60,7 +60,7 @@ export const CHAIN_CONFIGS: Record<number, ChainConfig> = {
 export const COMMON_TOKENS: Record<number, Record<string, Token>> = {
   1: { // Ethereum
     WETH: new Token(1, '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', 18, 'WETH', 'Wrapped Ether'),
-    USDC: new Token(1, '0xA0b86a33E6417efaf32ec70C9b7f932a3F8e8B8c', 6, 'USDC', 'USD Coin'),
+    USDC: new Token(1, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'USDC', 'USD Coin'),
     USDT: new Token(1, '0xdAC17F958D2ee523a2206206994597C13D831ec7', 6, 'USDT', 'Tether USD'),
     DAI: new Token(1, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18, 'DAI', 'Dai Stablecoin'),
   },
