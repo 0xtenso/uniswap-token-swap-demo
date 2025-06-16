@@ -192,11 +192,111 @@ export class SwapService {
 
     const calldata = swapInterface.encodeFunctionData('exactInputSingle', [swapData]);
 
+    // For ETH swaps, set the value to the amount being swapped
+    const isEthIn = params.tokenIn.address.toLowerCase() === '0x4200000000000000000000000000000000000006'.toLowerCase();
+    const value = isEthIn ? ethers.parseUnits(params.amountIn, 18).toString() : '0';
+
     return {
       to: this.chainConfig.swapRouterAddress,
       data: calldata,
-      value: '0',
+      value,
       gasEstimate: quote.gasEstimate,
     };
+  }
+
+  // Helper method for ETH to Token swaps
+  async getEthToTokenQuote(tokenOut: Token, ethAmount: string): Promise<SwapQuote> {
+    // Use WETH for routing but present as ETH
+    const wethToken = new Token(this.chainConfig.chainId, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether');
+    return this.getQuote(wethToken, tokenOut, ethAmount);
+  }
+
+  // Helper method for Token to ETH swaps
+  async getTokenToEthQuote(tokenIn: Token, tokenAmount: string): Promise<SwapQuote> {
+    // Use WETH for routing but present as ETH
+    const wethToken = new Token(this.chainConfig.chainId, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether');
+    return this.getQuote(tokenIn, wethToken, tokenAmount);
+  }
+
+  // Helper method for ETH to Token swaps execution
+  async executeEthToTokenSwap(params: Omit<SwapParams, 'tokenIn'> & { tokenOut: Token }): Promise<SwapResult> {
+    if (!this.signer) {
+      throw new Error('Signer not initialized. Provide private key to constructor.');
+    }
+
+    // Use WETH for the swap
+    const wethToken = new Token(this.chainConfig.chainId, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether');
+    
+    const swapParams: SwapParams = {
+      tokenIn: wethToken,
+      tokenOut: params.tokenOut,
+      amountIn: params.amountIn,
+      slippageTolerance: params.slippageTolerance,
+      deadline: params.deadline,
+      recipient: params.recipient,
+    };
+
+    // Get quote first
+    const quote = await this.getQuote(swapParams.tokenIn, swapParams.tokenOut, swapParams.amountIn);
+    
+    // Calculate minimum amount out with slippage
+    const amountOutMin = ethers.parseUnits(
+      (parseFloat(quote.amountOut) * (1 - swapParams.slippageTolerance / 100)).toString(),
+      swapParams.tokenOut.decimals
+    );
+
+    // Prepare swap parameters
+    const swapData = {
+      tokenIn: swapParams.tokenIn.address,
+      tokenOut: swapParams.tokenOut.address,
+      fee: FeeAmount.MEDIUM,
+      recipient: swapParams.recipient,
+      deadline: Math.floor(Date.now() / 1000) + swapParams.deadline,
+      amountIn: ethers.parseUnits(swapParams.amountIn, swapParams.tokenIn.decimals),
+      amountOutMinimum: amountOutMin,
+      sqrtPriceLimitX96: 0,
+    };
+
+    // Execute the swap with ETH value
+    const swapRouter = new ethers.Contract(
+      this.chainConfig.swapRouterAddress,
+      SWAP_ROUTER_ABI,
+      this.signer
+    );
+
+    const tx = await swapRouter.exactInputSingle(swapData, {
+      gasLimit: '300000',
+      value: ethers.parseUnits(swapParams.amountIn, 18), // Send ETH with transaction
+    });
+
+    const receipt = await tx.wait();
+
+    return {
+      hash: tx.hash,
+      amountIn: swapParams.amountIn,
+      amountOut: quote.amountOut,
+      gasUsed: receipt!.gasUsed.toString(),
+    };
+  }
+
+  // Helper method for Token to ETH swaps execution
+  async executeTokenToEthSwap(params: Omit<SwapParams, 'tokenOut'> & { tokenIn: Token }): Promise<SwapResult> {
+    if (!this.signer) {
+      throw new Error('Signer not initialized. Provide private key to constructor.');
+    }
+
+    // Use WETH for the swap
+    const wethToken = new Token(this.chainConfig.chainId, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether');
+    
+    const swapParams: SwapParams = {
+      tokenIn: params.tokenIn,
+      tokenOut: wethToken,
+      amountIn: params.amountIn,
+      slippageTolerance: params.slippageTolerance,
+      deadline: params.deadline,
+      recipient: params.recipient,
+    };
+
+    return this.executeSwap(swapParams);
   }
 } 

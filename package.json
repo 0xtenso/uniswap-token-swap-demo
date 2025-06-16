@@ -5,7 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/demo.js",
+    "demo": "npm run build && node dist/demo.js",
+    "demo-base": "npm run build && node dist/demo-base.js",
+    "start": "npm run demo",
     "dev": "ts-node src/demo.ts",
     "test": "ts-node src/demo.ts"
   },

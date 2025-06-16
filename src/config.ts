@@ -67,6 +67,7 @@ export const COMMON_TOKENS: Record<number, Record<string, Token>> = {
   8453: { // Base
     WETH: new Token(8453, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether'),
     USDC: new Token(8453, '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', 6, 'USDC', 'USD Coin'),
+    USDT: new Token(8453, '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', 6, 'USDT', 'Tether USD'),
     DAI: new Token(8453, '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', 18, 'DAI', 'Dai Stablecoin'),
   },
   42161: { // Arbitrum

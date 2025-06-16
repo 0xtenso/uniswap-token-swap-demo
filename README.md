@@ -1,222 +1,211 @@
-# Uniswap Token Swap Demo
+# Uniswap Multi-Chain Token Swap DApp
 
-A TypeScript implementation of token swapping using the Uniswap SDK, supporting multiple EVM chains including Ethereum, Base, Arbitrum, and BNB Smart Chain.
+A TypeScript-based decentralized application for swapping tokens across multiple EVM chains using the Uniswap V3 SDK.
 
 ## Features
 
-- 🌐 Multi-chain support (Ethereum, Base, Arbitrum, BSC)
-- 💱 Token-to-token swaps using Uniswap V3
-- 📊 Price quotes and slippage protection
-- ⛽ Gas estimation
-- 🔐 Secure transaction handling
-- 📝 TypeScript support with full type safety
+🔗 **Multi-Chain Support**: Ethereum, Base, Arbitrum, BNB Smart Chain  
+💱 **Token Swaps**: Support for all major tokens (ETH, WETH, USDC, USDT, DAI, etc.)  
+⛽ **Gas Optimization**: Efficient gas usage with Uniswap V3  
+🔐 **Secure**: Non-custodial swaps directly from your wallet  
+📊 **Real-time Quotes**: Live pricing and slippage calculation  
+🚀 **Easy Integration**: Simple API for developers  
 
 ## Supported Chains
 
-| Chain | Chain ID | Native Currency | Status |
-|-------|----------|----------------|---------|
-| Ethereum | 1 | ETH | ✅ |
-| Base | 8453 | ETH | ✅ |
-| Arbitrum One | 42161 | ETH | ✅ |
-| BNB Smart Chain | 56 | BNB | ✅ |
+| Chain | Chain ID | Status | Native Token |
+|-------|----------|--------|--------------|
+| Ethereum | 1 | ✅ | ETH |
+| Base | 8453 | ✅ | ETH |
+| Arbitrum One | 42161 | ✅ | ETH |
+| BNB Smart Chain | 56 | ✅ | BNB |
 
-## Installation
+## Quick Start
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd uniswap-token-swap-demo
-```
+### Installation
 
-2. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Create environment file:
-```bash
-cp .env.example .env
-```
+### Environment Setup
 
-4. Configure your environment variables in `.env`:
+Create a `.env` file:
+
 ```env
-# RPC URLs (get from Alchemy, Infura, or public endpoints)
-ETHEREUM_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/YOUR_API_KEY
-BASE_RPC_URL=https://mainnet.base.org
-ARBITRUM_RPC_URL=https://arb1.arbitrum.io/rpc
-BNB_RPC_URL=https://bsc-dataseed.binance.org
-
-# Private key for transactions (optional, for quotes only)
+# Optional: Add your private key for swap execution
 PRIVATE_KEY=your_private_key_here
+
+# Optional: Custom RPC URLs
+ETHEREUM_RPC_URL=your_ethereum_rpc
+BASE_RPC_URL=your_base_rpc
+ARBITRUM_RPC_URL=your_arbitrum_rpc
+BNB_RPC_URL=your_bnb_rpc
 ```
 
-## Usage
+### Running Demos
 
-### Build the project:
 ```bash
+# General multi-chain demo
+npm run demo
+
+# Base network specific demo (ETH ↔ USDT)
+npm run demo-base
+
+# Build only
 npm run build
 ```
 
-### Run the demo:
-```bash
-npm run dev
+## Base Network Demo (ETH ↔ USDT)
+
+The Base demo specifically demonstrates native ETH to USDT swaps:
+
+### Features Demonstrated
+
+✅ **ETH → USDT Swap Quotes**  
+✅ **USDT → ETH Swap Quotes**  
+✅ **Token Balance Checking**  
+✅ **Allowance Management**  
+✅ **Transaction Preparation**  
+✅ **Real-time Exchange Rates**  
+
+### Example Output
+
+```
+🟡 Base Network Token Swap Demo
+==================================================
+📍 Network: Base (Chain ID: 8453)
+🔗 Native Token: ETH
+💱 Demo Swaps: ETH ↔ USDT
+==================================================
+
+📊 Example 1: ETH → USDT Swap Quote
+----------------------------------------
+💰 Input: 0.1 ETH (Native)
+💰 Expected Output: 254.32 USDT
+⛽ Estimated Gas: 150000
+📈 Price Impact: 0.1%
+🛣️  Route: ETH → USDT
+💱 Exchange Rate: 1 ETH = 2543.20 USDT
+ℹ️  Note: ETH will be automatically wrapped to WETH during swap
 ```
 
-### Basic Usage Example
+### How It Works
+
+1. **ETH Input**: You provide native ETH
+2. **Auto-Wrapping**: ETH is automatically wrapped to WETH
+3. **Uniswap Swap**: WETH is swapped to USDT via Uniswap V3
+4. **Direct Delivery**: USDT is sent to your address
+
+For the reverse (USDT → ETH):
+1. **USDT Input**: You provide USDT (requires approval)
+2. **Uniswap Swap**: USDT is swapped to WETH
+3. **Auto-Unwrapping**: WETH is unwrapped to native ETH
+4. **Direct Delivery**: ETH is sent to your address
+
+## Usage Examples
+
+### Getting a Quote
 
 ```typescript
 import { SwapService } from './src/swapper';
 import { COMMON_TOKENS } from './src/config';
 
-// Initialize swap service for Ethereum
-const swapService = new SwapService(1, process.env.PRIVATE_KEY);
+// Initialize for Base network
+const swapService = new SwapService(8453);
+const tokens = COMMON_TOKENS[8453];
 
-// Get a quote
-const quote = await swapService.getQuote(
-  COMMON_TOKENS[1].USDC,
-  COMMON_TOKENS[1].WETH,
-  '1000' // 1000 USDC
+// Get ETH to USDT quote
+const quote = await swapService.getEthToTokenQuote(
+  tokens.USDT,
+  '0.1' // 0.1 ETH
 );
 
-console.log(`Expected output: ${quote.amountOut} WETH`);
+console.log(`1 ETH = ${quote.amountOut / 0.1} USDT`);
+```
 
-// Execute swap
-const swapParams = {
-  tokenIn: COMMON_TOKENS[1].USDC,
-  tokenOut: COMMON_TOKENS[1].WETH,
-  amountIn: '1000',
+### Executing a Swap
+
+```typescript
+// Initialize with private key for execution
+const swapService = new SwapService(8453, 'your_private_key');
+
+// Execute ETH to USDT swap
+const result = await swapService.executeEthToTokenSwap({
+  tokenOut: tokens.USDT,
+  amountIn: '0.1',
   slippageTolerance: 0.5, // 0.5%
   deadline: 1800, // 30 minutes
-  recipient: '0x...', // Your wallet address
-};
+  recipient: 'your_wallet_address',
+});
 
-const result = await swapService.executeSwap(swapParams);
-console.log(`Transaction hash: ${result.hash}`);
+console.log(`Swap completed: ${result.hash}`);
 ```
 
-### Multi-Chain Usage
+### Checking Balances
 
 ```typescript
-// Different chains
-const ethSwap = new SwapService(1, privateKey);     // Ethereum
-const baseSwap = new SwapService(8453, privateKey);  // Base
-const arbSwap = new SwapService(42161, privateKey);  // Arbitrum
-const bscSwap = new SwapService(56, privateKey);     // BSC
+// Check ETH balance
+const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+const ethBalance = await provider.getBalance('your_address');
 
-// Each service works the same way
-const ethQuote = await ethSwap.getQuote(/*...*/);
-const baseQuote = await baseSwap.getQuote(/*...*/);
+// Check USDT balance
+const usdtBalance = await swapService.getTokenBalance(
+  tokens.USDT.address,
+  'your_address'
+);
 ```
 
-## API Reference
+## Token Addresses (Base Network)
 
-### SwapService
+| Token | Address | Decimals |
+|-------|---------|----------|
+| WETH | `0x4200000000000000000000000000000000000006` | 18 |
+| USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | 6 |
+| USDT | `0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2` | 6 |
+| DAI | `0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb` | 18 |
 
-#### Constructor
-```typescript
-new SwapService(chainId: number, privateKey?: string)
+## Uniswap Contracts (Base)
+
+| Contract | Address |
+|----------|---------|
+| Swap Router | `0x2626664c2603336E57B271c5C0b26F421741e481` |
+| Quoter | `0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a` |
+
+## Safety Guidelines
+
+⚠️ **Important Notes:**
+
+1. **Test First**: Always test with small amounts
+2. **Slippage**: Set appropriate slippage tolerance (0.5-3%)
+3. **Gas Fees**: Ensure sufficient ETH for gas
+4. **Approvals**: USDT swaps require token approval first
+5. **Private Keys**: Never share your private keys
+6. **Testnet**: Use testnets for development
+
+## Architecture
+
+```
+src/
+├── types.ts          # TypeScript interfaces
+├── config.ts         # Chain and token configurations
+├── swapper.ts        # Core swap service
+└── demo.ts           # Multi-chain demo
+
+demo-base.ts          # Base-specific demo
 ```
 
-#### Methods
+## Dependencies
 
-##### `getQuote(tokenIn, tokenOut, amountIn, fee?)`
-Get a price quote for a token swap.
-
-- `tokenIn`: Input token
-- `tokenOut`: Output token  
-- `amountIn`: Amount to swap (in token units)
-- `fee`: Pool fee tier (optional, defaults to MEDIUM)
-
-Returns: `SwapQuote` object with expected output amount
-
-##### `executeSwap(params)`
-Execute a token swap transaction.
-
-- `params`: SwapParams object with swap details
-
-Returns: `SwapResult` object with transaction details
-
-##### `getTokenBalance(tokenAddress, walletAddress)`
-Get token balance for a wallet.
-
-##### `checkAllowance(tokenAddress, ownerAddress, spenderAddress)`
-Check token allowance for spending.
-
-##### `approveToken(tokenAddress, spenderAddress, amount)`
-Approve token spending (requires private key).
-
-## Common Tokens
-
-The demo includes pre-configured token addresses for each supported chain:
-
-### Ethereum (Chain ID: 1)
-- WETH: Wrapped Ether
-- USDC: USD Coin
-- USDT: Tether USD
-- DAI: Dai Stablecoin
-
-### Base (Chain ID: 8453)
-- WETH: Wrapped Ether
-- USDC: USD Coin
-- DAI: Dai Stablecoin
-
-### Arbitrum (Chain ID: 42161)
-- WETH: Wrapped Ether
-- USDC: USD Coin
-- USDT: Tether USD
-- DAI: Dai Stablecoin
-
-### BSC (Chain ID: 56)
-- WBNB: Wrapped BNB
-- USDC: USD Coin
-- USDT: Tether USD
-- BUSD: Binance USD
-
-## Security Considerations
-
-⚠️ **Important Security Notes:**
-
-1. **Never commit private keys** to version control
-2. **Test on testnets** first before mainnet
-3. **Use hardware wallets** for production
-4. **Set appropriate slippage** to avoid MEV attacks
-5. **Monitor gas prices** for optimal transaction timing
-6. **Verify token addresses** before swapping
-
-## Error Handling
-
-The service includes comprehensive error handling for:
-- Network connectivity issues
-- Insufficient balances
-- Slippage exceeded
-- Transaction failures
-- Invalid token addresses
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Submit a pull request
+- `@uniswap/sdk-core`: Core Uniswap SDK
+- `@uniswap/v3-sdk`: Uniswap V3 specific functionality
+- `@uniswap/router-sdk`: Router SDK for swaps
+- `ethers`: Ethereum library for blockchain interaction
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT
 
 ## Disclaimer
 
-This is a demo implementation for educational purposes. Always conduct thorough testing and security audits before using in production. The authors are not responsible for any financial losses.
-
-## Support
-
-For questions and support:
-- Check the demo code in `src/demo.ts`
-- Review the API documentation above
-- Test with small amounts first
-- Use testnets for development
-
-## Resources
-
-- [Uniswap V3 SDK Documentation](https://docs.uniswap.org/sdk/v3/overview)
-- [Ethers.js Documentation](https://docs.ethers.org/)
-- [Uniswap Protocol](https://uniswap.org/) 
+This software is provided for educational purposes. Always verify transactions and use at your own risk. The authors are not responsible for any financial losses. 
