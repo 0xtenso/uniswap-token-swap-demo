@@ -1,11 +1,42 @@
 import * as dotenv from 'dotenv';
 import { SwapService } from './swapper';
-import { COMMON_TOKENS, DEFAULT_SLIPPAGE, DEFAULT_DEADLINE } from './config';
+import { COMMON_TOKENS, CHAIN_CONFIGS, DEFAULT_SLIPPAGE, DEFAULT_DEADLINE } from './config';
 import { SwapParams } from './types';
 import { Token } from '@uniswap/sdk-core';
+import { ethers } from 'ethers';
 
 // Load environment variables
 dotenv.config();
+
+async function testNetworkConnectivity() {
+  console.log('🔍 Testing Base Network Connectivity...');
+  console.log('-'.repeat(40));
+  
+  try {
+    const chainId = 8453;
+    const config = CHAIN_CONFIGS[chainId];
+    const provider = new ethers.JsonRpcProvider(config.rpcUrl);
+    
+    // Test basic RPC connectivity
+    const network = await provider.getNetwork();
+    console.log(`✅ Network Connected: ${network.name} (Chain ID: ${network.chainId})`);
+    
+    // Test latest block
+    const blockNumber = await provider.getBlockNumber();
+    console.log(`✅ Latest Block: ${blockNumber}`);
+    
+    // Test a simple balance call (WETH contract exists on Base)
+    const wethAddress = '0x4200000000000000000000000000000000000006';
+    const balance = await provider.getBalance(wethAddress);
+    console.log(`✅ WETH Contract Balance: ${ethers.formatEther(balance)} ETH`);
+    
+    console.log('✅ Network connectivity test passed!\n');
+    return true;
+  } catch (error) {
+    console.log(`❌ Network connectivity test failed: ${error}\n`);
+    return false;
+  }
+}
 
 async function demonstrateBaseSwaps() {
   console.log('🟡 Base Network Token Swap Demo\n');
@@ -16,8 +47,14 @@ async function demonstrateBaseSwaps() {
   console.log('='.repeat(50));
   console.log();
 
-  // Base configuration
-  const chainId = 8453; // Base
+  // Test network connectivity first
+  const isConnected = await testNetworkConnectivity();
+  if (!isConnected) {
+    console.log('❌ Aborting demo due to network connectivity issues');
+    return;
+  }
+
+  const chainId = 8453;
   const privateKey = process.env.PRIVATE_KEY;
   
   try {

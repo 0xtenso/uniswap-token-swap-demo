@@ -14,7 +14,7 @@ const ERC20_ABI = [
 ];
 
 const QUOTER_ABI = [
-  'function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 sqrtPriceLimitX96) external returns (uint256 amountOut)',
+  'function quoteExactInputSingle((address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 sqrtPriceLimitX96)) external returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32 initializedTicksCrossed, uint256 gasEstimate)',
 ];
 
 const POOL_ABI = [
@@ -81,13 +81,19 @@ export class SwapService {
     const amountInWei = ethers.parseUnits(amountIn, tokenIn.decimals);
 
     try {
-      const quotedAmountOut = await quoterContract.quoteExactInputSingle.staticCall(
-        tokenIn.address,
-        tokenOut.address,
-        fee,
-        amountInWei,
-        0 // sqrtPriceLimitX96 (0 = no limit)
-      );
+      // Use struct-based parameters for QuoterV2
+      const quoteParams = {
+        tokenIn: tokenIn.address,
+        tokenOut: tokenOut.address,
+        fee: fee,
+        amountIn: amountInWei,
+        sqrtPriceLimitX96: 0 // no limit
+      };
+
+      const result = await quoterContract.quoteExactInputSingle.staticCall(quoteParams);
+      
+      // QuoterV2 returns [amountOut, sqrtPriceX96After, initializedTicksCrossed, gasEstimate]
+      const [quotedAmountOut, , , gasEstimate] = result;
 
       const amountOut = ethers.formatUnits(quotedAmountOut, tokenOut.decimals);
       
@@ -96,7 +102,7 @@ export class SwapService {
       
       return {
         amountOut,
-        gasEstimate: '150000', // Estimated gas
+        gasEstimate: gasEstimate.toString(),
         priceImpact,
         route: [tokenIn.symbol!, tokenOut.symbol!],
       };
